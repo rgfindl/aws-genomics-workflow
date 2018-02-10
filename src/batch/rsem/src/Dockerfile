@@ -22,7 +22,10 @@ RUN make
 
 RUN make install
 
-CMD ls
+ADD run.sh ./run.sh
+RUN chmod a+x ./run.sh
 
-#docker build -t snpeff .
-#docker run -v ${PWD}/../../.test-data/:/data -e INPUT="snpeff-input.vcf" snpeff
+CMD ./run.sh
+
+#docker build -t rsem .
+#docker run -v ${PWD}/../../.test-data/:/data -e INPUT="snpeff-input.vcf" rsem

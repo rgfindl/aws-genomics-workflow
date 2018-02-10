@@ -19,7 +19,10 @@ RUN wget -O /snpeff.zip https://downloads.sourceforge.net/project/snpeff/snpEff_
 
 RUN java -jar /snpEff/snpEff.jar download hg38
 
-CMD java -jar /snpEff/snpEff.jar GRCh37.75 /data/${INPUT} /data/snpeff-out.vcf
+ADD run.sh ./run.sh
+RUN chmod a+x ./run.sh
+
+CMD ./run.sh
 
 #docker build -t snpeff .
 #docker run -v ${PWD}/../../.test-data/:/data -e INPUT="snpeff-input.vcf" snpeff

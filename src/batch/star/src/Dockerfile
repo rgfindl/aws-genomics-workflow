@@ -22,7 +22,12 @@ RUN ls
 
 RUN make STAR
 
-CMD ls
+ADD run.sh ./run.sh
+RUN chmod a+x ./run.sh
 
-#docker build -t snpeff .
-#docker run -v ${PWD}/../../.test-data/:/data -e INPUT="snpeff-input.vcf" snpeff
+CMD ./run.sh
+
+CMD ./STAR -version
+
+#docker build -t star .
+#docker run -v ${PWD}/../../.test-data/:/data -e INPUT="snpeff-input.vcf" star

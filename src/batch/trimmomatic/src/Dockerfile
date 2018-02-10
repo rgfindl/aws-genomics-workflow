@@ -16,7 +16,10 @@ LABEL tags="Genomics"
 RUN wget -O /trimmomatic.zip http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-${VERSION}.zip && \
     unzip /trimmomatic.zip && rm /trimmomatic.zip
 
-CMD java -jar Trimmomatic-${VERSION}/trimmomatic-${VERSION}.jar SE -phred33 /data/${INPUT} /data/trimmomatic-out.fq.gz ILLUMINACLIP:Trimmomatic-${VERSION}/adapters/TruSeq3-SE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+ADD run.sh ./run.sh
+RUN chmod a+x ./run.sh
+
+CMD ./run.sh
 
 #docker build -t trimmomatic .
 #docker run -v ${PWD}/../../.test-data/:/data -e INPUT="NA12878-Rep1_S7_L004_R2_001.fastq.gz" trimmomatic

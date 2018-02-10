@@ -1,0 +1,606 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Services Stack CI/CD - Boostrap
+
+Parameters:
+  GitHubOwner:
+    Description: The name of the GitHub repository owner
+    Type: String
+  GitHubToken:
+    Type: String
+    Description: GitHub repository OAuth token
+    NoEcho: true
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name
+
+  Environment:
+    Type: String
+    Description: Environment
+    Default: dev
+  KeyPairName:
+    Type: String
+    Description: EC2 KeyPair
+
+Mappings:
+  Branch:
+    prod:
+      BRANCH: 'master'
+    dev:
+      BRANCH: 'develop'
+
+Resources:
+
+  #
+  # Bucket used by the pipelines to store artifacts.
+  #
+  PipelinesBucket:
+    Description: The artifact bucket required for inter-stage data exchange
+    Type: AWS::S3::Bucket
+
+  #
+  # IAM Role needed by the pipelines
+  #
+  CodePipelineRole:
+    Description: The role CodePipeline will assume during pipeline execution
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+
+  CodePipelinePolicy:
+    Description: Policy for the CodePipeline Role
+    DependsOn: CodePipelineRole
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName:
+        Fn::Join:
+          - ''
+          - - Ref: AWS::StackName
+            - '-pipeline-policy'
+      Roles:
+        - !Ref CodePipelineRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:*
+            Effect: Allow
+            Resource:
+              - !GetAtt PipelinesBucket.Arn
+              - !Join ["", [!GetAtt PipelinesBucket.Arn, "*"]]
+          - Action:
+              - cloudformation:*
+            Effect: Allow
+            Resource:
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*
+          - Action:
+              - codepipeline:*
+            Effect: Allow
+            Resource:
+              - !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:*
+          - Action:
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuilds
+              - codebuild:StopBuild
+            Effect: Allow
+            Resource:
+              - '*'
+          - Action:
+              - iam:PassRole
+            Effect: Allow
+            Resource:
+              - !GetAtt CloudFormationRole.Arn
+
+  #
+  # IAM Role needed by cloudformation
+  #
+  CloudFormationRole:
+    Description: The role cloudformation will assume during pipeline execution
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+  CloudFormationPolicy:
+    Description: Policy for the cloudformation execution Role
+    DependsOn: CloudFormationRole
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName:
+        Fn::Join:
+          - ''
+          - - Ref: AWS::StackName
+            - '-cloudformation-policy'
+      Roles:
+        - !Ref CloudFormationRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - '*'
+            Resource:
+              - '*'
+
+  #
+  # IAM role needed by our CodeBuild
+  #
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+  CodeBuildPolicy:
+    Type: AWS::IAM::Policy
+    Description: Policy for the codebuild execution
+    DependsOn: CodeBuildRole
+    Properties:
+      PolicyName:
+        Fn::Join:
+          - ''
+          - - Ref: AWS::StackName
+            - '-codebuild-policy'
+      Roles:
+        - !Ref CodeBuildRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - '*'
+            Resource:
+              - '*'
+
+  #
+  # Code Build project.
+  # This Creates/Updates the VPC CloudFormation stack.
+  # This is required over the normal CloudFormation CodePipeline step due to the large size of the VPC template. > 51200 bytes
+  #
+  VPCCodeBuildProd:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/nodejs:6.3.1
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: StackName
+            Value:
+              Fn::Join:
+                - ''
+                - - Ref: AppName
+                  - '-vpc-prod'
+          - Name: KeyPairName
+            Value: !Ref KeyPairName
+      Name:
+        Fn::Join:
+          - ''
+          - - Ref: AppName
+            - '-code-build-prod'
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: stacks/vpc/buildspec.yml
+      TimeoutInMinutes: 5 # must be between 5 minutes and 8 hours
+  VPCCodeBuildSandbox:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/nodejs:6.3.1
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: StackName
+            Value:
+              Fn::Join:
+                - ''
+                - - Ref: AppName
+                  - '-vpc-sandbox'
+          - Name: KeyPairName
+            Value: !Ref KeyPairName
+      Name:
+        Fn::Join:
+          - ''
+          - - Ref: AppName
+            - '-code-build-sandbox'
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: stacks/vpc/buildspec.yml
+      TimeoutInMinutes: 5 # must be between 5 minutes and 8 hours
+
+  #
+  # Pipelines that create/update the cloudformation stacks within the project
+  # Prod environment.
+  #
+  PipelineProd:
+    Description: The pipeline that will generate other stacks
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn:
+      - CodePipelinePolicy
+      - CloudFormationPolicy
+      - VPCCodeBuildProd
+    Properties:
+      RestartExecutionOnUpdate: True
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref PipelinesBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: CloneRepository
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: GitSource
+              Configuration:
+                Owner: !Ref GitHubOwner
+                Branch: 'master'
+                Repo: !Ref GitHubRepo
+                OAuthToken: !Ref GitHubToken
+              RunOrder: 1
+        - Name: Notifications
+          Actions:
+            - Name: Stack
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: NotificationsSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/notifications/notifications.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-notifications-prod"
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "prod",
+                    "AppName" : "${AppName}",
+                    "NotificationSlack" : "${NotificationSlack}",
+                    "NotificationEmail" : "${NotificationEmail}",
+                    "NotificationSMS" : "${NotificationSMS}"
+                  }
+              RunOrder: 1
+            - Name: BuildDeploy
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Sub "${AppName}-notifications-prod-code-build"
+              InputArtifacts:
+                - Name: GitSource
+              RunOrder: 2
+        - Name: VPC
+          Actions:
+            - Name: VPC
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref VPCCodeBuildProd
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: VPCSource
+              RunOrder: 1
+        - Name: ECS
+          Actions:
+            - Name: ECS
+              InputArtifacts:
+                - Name: GitSource
+                - Name: VPCSource
+              OutputArtifacts:
+                - Name: ECSSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/ecs.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName:
+                  Fn::Join:
+                    - ''
+                    - - Ref: AppName
+                      - '-ecs-prod'
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "prod",
+                    "KeyPairName": "${KeyPairName}",
+                    "VPCStack" : "${AppName}-vpc-prod",
+                    "NotificationsStack" : "${AppName}-notifications-prod"
+                  }
+              RunOrder: 1
+        - Name: Services
+          Actions:
+            - Name: Service1
+              InputArtifacts:
+                - Name: GitSource
+                - Name: VPCSource
+                - Name: ECSSource
+              OutputArtifacts:
+                - Name: Service1Output
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/service1.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName:
+                  Fn::Join:
+                    - ''
+                    - - Ref: AppName
+                      - '-service1-prod'
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "prod",
+                    "VPCStack" : "${AppName}-vpc-prod",
+                    "ECSStack" : "${AppName}-ecs-prod",
+                    "GitHubToken" : "${GitHubToken}",
+                    "AppName" : "${AppName}",
+                    "ServiceName" : "service1",
+                    "NotificationsStack" : "${AppName}-notifications-prod"
+                  }
+              RunOrder: 1
+            - Name: Service2
+              InputArtifacts:
+                - Name: GitSource
+                - Name: VPCSource
+                - Name: ECSSource
+              OutputArtifacts:
+                - Name: Service2Output
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/service2.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName:
+                  Fn::Join:
+                    - ''
+                    - - Ref: AppName
+                      - '-service2-prod'
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "prod",
+                    "VPCStack" : "${AppName}-vpc-prod",
+                    "ECSStack" : "${AppName}-ecs-prod",
+                    "GitHubToken" : "${GitHubToken}",
+                    "AppName" : "${AppName}",
+                    "ServiceName" : "service2",
+                    "NotificationsStack" : "${AppName}-notifications-prod"
+                  }
+              RunOrder: 1
+
+  #
+  # Pipelines that create/update the cloudformation stacks within the project
+  # Sandbox environment.
+  #
+  PipelineSandbox:
+    Description: The pipeline that will generate other stacks
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn:
+      - CodePipelinePolicy
+      - CloudFormationPolicy
+      - VPCCodeBuildSandbox
+    Properties:
+      RestartExecutionOnUpdate: True
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref PipelinesBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: CloneRepository
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: GitSource
+              Configuration:
+                Owner: !Ref GitHubOwner
+                Branch: 'develop'
+                Repo: !Ref GitHubRepo
+                OAuthToken: !Ref GitHubToken
+              RunOrder: 1
+        - Name: Notifications
+          Actions:
+            - Name: Stack
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: NotificationsSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/notifications/notifications.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-notifications-sandbox"
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "sandbox",
+                    "AppName" : "${AppName}",
+                    "NotificationSlack" : "${NotificationSlack}",
+                    "NotificationEmail" : "${NotificationEmail}",
+                    "NotificationSMS" : "${NotificationSMS}"
+                  }
+              RunOrder: 1
+            - Name: BuildDeploy
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Sub "${AppName}-notifications-sandbox-code-build"
+              InputArtifacts:
+                - Name: GitSource
+              RunOrder: 2
+        - Name: VPC
+          Actions:
+            - Name: VPC
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref VPCCodeBuildSandbox
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: VPCSource
+              RunOrder: 1
+        - Name: ECS
+          Actions:
+            - Name: ECS
+              InputArtifacts:
+                - Name: GitSource
+                - Name: VPCSource
+              OutputArtifacts:
+                - Name: ECSSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/ecs.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName:
+                  Fn::Join:
+                    - ''
+                    - - Ref: AppName
+                      - '-ecs-sandbox'
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "sandbox",
+                    "KeyPairName": "${KeyPairName}",
+                    "VPCStack" : "${AppName}-vpc-sandbox",
+                    "NotificationsStack" : "${AppName}-notifications-sandbox"
+                  }
+              RunOrder: 1
+        - Name: Services
+          Actions:
+            - Name: Service1
+              InputArtifacts:
+                - Name: GitSource
+                - Name: VPCSource
+                - Name: ECSSource
+              OutputArtifacts:
+                - Name: Service1Output
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/service1.bootstrap.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName:
+                  Fn::Join:
+                    - ''
+                    - - Ref: AppName
+                      - '-service1-sandbox'
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "sandbox",
+                    "VPCStack" : "${AppName}-vpc-sandbox",
+                    "ECSStack" : "${AppName}-ecs-sandbox",
+                    "GitHubToken" : "${GitHubToken}",
+                    "AppName" : "${AppName}",
+                    "ServiceName" : "service1",
+                    "NotificationsStack" : "${AppName}-notifications-sandbox"
+                  }
+              RunOrder: 1
+            - Name: Service2
+              InputArtifacts:
+                - Name: GitSource
+                - Name: VPCSource
+                - Name: ECSSource
+              OutputArtifacts:
+                - Name: Service2Output
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/service2.bootstrap.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName:
+                  Fn::Join:
+                    - ''
+                    - - Ref: AppName
+                      - '-service2-sandbox'
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment": "sandbox",
+                    "VPCStack" : "${AppName}-vpc-sandbox",
+                    "ECSStack" : "${AppName}-ecs-sandbox",
+                    "GitHubToken" : "${GitHubToken}",
+                    "AppName" : "${AppName}",
+                    "ServiceName" : "service2",
+                    "NotificationsStack" : "${AppName}-notifications-sandbox"
+                  }
+              RunOrder: 1

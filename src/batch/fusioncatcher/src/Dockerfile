@@ -52,7 +52,13 @@ WORKDIR /opt
 ######################
 
 RUN wget --no-check-certificate http://sf.net/projects/fusioncatcher/files/bootstrap.py -O bootstrap.py \
-    && python bootstrap.py -t --download -y -i /opt/fusioncatcher/v1.00/
+    && python bootstrap.py -t -y -i /opt/fusioncatcher/v1.00/
 
-#docker build -t trimmomatic .
-#docker run -v ${PWD}/../../.test-data/:/data -e INPUT="NA12878-Rep1_S7_L004_R2_001.fastq.gz" trimmomatic
+ADD run.sh ./run.sh
+RUN chmod a+x ./run.sh
+
+CMD ./run.sh
+
+
+#docker build -t fusioncatcher .
+#docker run -v ${PWD}/../../.test-data/:/data fusioncatcher
