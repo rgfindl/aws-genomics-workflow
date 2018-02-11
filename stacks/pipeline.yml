@@ -362,8 +362,6 @@ Resources:
             - Name: ECR
               InputArtifacts:
                 - Name: GitSource
-              OutputArtifacts:
-                - Name: ECRSource
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -398,8 +396,6 @@ Resources:
             - Name: ECR
               InputArtifacts:
                 - Name: GitSource
-              OutputArtifacts:
-                - Name: ECRSource
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -434,8 +430,6 @@ Resources:
             - Name: ECR
               InputArtifacts:
                 - Name: GitSource
-              OutputArtifacts:
-                - Name: ECRSource
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -470,8 +464,6 @@ Resources:
             - Name: ECR
               InputArtifacts:
                 - Name: GitSource
-              OutputArtifacts:
-                - Name: ECRSource
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -495,7 +487,7 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: !Ref starCodeBuild
+                ProjectName: !Ref StarCodeBuild
               InputArtifacts:
                 - Name: GitSource
               OutputArtifacts:
@@ -506,8 +498,6 @@ Resources:
             - Name: ECR
               InputArtifacts:
                 - Name: GitSource
-              OutputArtifacts:
-                - Name: ECRSource
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -537,3 +527,30 @@ Resources:
               OutputArtifacts:
                 - Name: TrimmomaticBuildOutput
               RunOrder: 2
+        - Name: Batch
+          Actions:
+            - Name: BatchEnvironment
+              InputArtifacts:
+                - Name: GitSource
+                - Name: VPCSource
+                - Name: FusionCatcherBuildOutput
+                - Name: RsemBuildOutput
+                - Name: SnpeffBuildOutput
+                - Name: StarBuildOutput
+                - Name: TrimmomaticBuildOutput
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/batch.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-batch-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "RepositoryName": "${AppName}/trimmomatic/${Environment}"
+                  }
+              RunOrder: 1
