@@ -2,7 +2,8 @@ version: 0.1
 phases:
   build:
     commands:
-      - cd $(echo $SRC_PATH)
+      - echo "cd $SRC_PATH"
+      - $(echo "cd $SRC_PATH")
       - pwd
       - ls
       - $(aws ecr get-login)
