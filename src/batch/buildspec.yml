@@ -2,14 +2,13 @@ version: 0.1
 phases:
   build:
     commands:
-      - cd $(echo ${SRC_PATH})
+      - cd $(echo $SRC_PATH)
       - pwd
       - ls
       - $(aws ecr get-login)
       - docker build --tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" .
       - docker tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" "${REPOSITORY_URI}:$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
       - docker push "${REPOSITORY_URI}"
-      - aws sns publish --topic-arn ${SNS_TOPIC_ARN} --message "${APP} version $(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8) is ready." --subject "${APP} version $(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8) is ready."
       - printf '{"version":"%s"}' "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" > version.json
 artifacts:
   files: version.json
