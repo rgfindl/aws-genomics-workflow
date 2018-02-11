@@ -185,7 +185,7 @@ Resources:
           - Name: APP
             Value: !Sub "${AppName}-fusioncatcher-${Environment}"
           - Name: SRC_PATH
-            Value: "./src/batch/fusioncatcher"
+            Value: "src/batch/fusioncatcher"
       Name: !Sub "${AppName}-fusioncatcher-${Environment}"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Source:
@@ -214,7 +214,7 @@ Resources:
           - Name: APP
             Value: !Sub "${AppName}-rsem-${Environment}"
           - Name: SRC_PATH
-            Value: "./src/batch/rsem"
+            Value: "src/batch/rsem"
       Name: !Sub "${AppName}-rsem-${Environment}"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Source:
@@ -243,7 +243,7 @@ Resources:
           - Name: APP
             Value: !Sub "${AppName}-snpeff-${Environment}"
           - Name: SRC_PATH
-            Value: "./src/batch/snpeff"
+            Value: "src/batch/snpeff"
       Name: !Sub "${AppName}-snpeff-${Environment}"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Source:
@@ -272,7 +272,7 @@ Resources:
           - Name: APP
             Value: !Sub "${AppName}-star-${Environment}"
           - Name: SRC_PATH
-            Value: "./src/batch/star"
+            Value: "src/batch/star"
       Name: !Sub "${AppName}-star-${Environment}"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Source:
@@ -301,7 +301,7 @@ Resources:
           - Name: APP
             Value: !Sub "${AppName}-trimmomatic-${Environment}"
           - Name: SRC_PATH
-            Value: "./src/batch/trimmomatic"
+            Value: "src/batch/trimmomatic"
       Name: !Sub "${AppName}-trimmomatic-${Environment}"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Source:
