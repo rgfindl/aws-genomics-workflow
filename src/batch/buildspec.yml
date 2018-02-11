@@ -2,14 +2,10 @@ version: 0.1
 phases:
   build:
     commands:
-      - echo "cd $SRC_PATH"
-      - $(echo "cd $SRC_PATH")
-      - pwd
-      - ls
       - $(aws ecr get-login)
-      - docker build --tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" .
-      - docker tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" "${REPOSITORY_URI}:$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
-      - docker push "${REPOSITORY_URI}"
+      - $(echo "cd $SRC_PATH") && docker build --tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" .
+      - $(echo "cd $SRC_PATH") && docker tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" "${REPOSITORY_URI}:$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
+      - $(echo "cd $SRC_PATH") && docker push "${REPOSITORY_URI}"
       - printf '{"version":"%s"}' "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" > version.json
 artifacts:
   files: version.json
