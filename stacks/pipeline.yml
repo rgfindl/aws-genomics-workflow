@@ -357,9 +357,9 @@ Resources:
               OutputArtifacts:
                 - Name: VPCSource
               RunOrder: 1
-        - Name: FusionCatcherBuild
+        - Name: BuildBatchImages
           Actions:
-            - Name: ECR
+            - Name: FusionCatcherECR
               InputArtifacts:
                 - Name: GitSource
               ActionTypeId:
@@ -378,7 +378,7 @@ Resources:
                     "RepositoryName": "${AppName}/fusioncatcher/${Environment}"
                   }
               RunOrder: 1
-            - Name: BuildPushImage
+            - Name: FusionCatcherBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -391,9 +391,7 @@ Resources:
               OutputArtifacts:
                 - Name: FusionCatcherBuildOutput
               RunOrder: 2
-        - Name: RsemBuild
-          Actions:
-            - Name: ECR
+            - Name: RsemECR
               InputArtifacts:
                 - Name: GitSource
               ActionTypeId:
@@ -412,7 +410,7 @@ Resources:
                     "RepositoryName": "${AppName}/rsem/${Environment}"
                   }
               RunOrder: 1
-            - Name: BuildPushImage
+            - Name: RsemBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -425,9 +423,7 @@ Resources:
               OutputArtifacts:
                 - Name: RsemBuildOutput
               RunOrder: 2
-        - Name: SnpeffBuild
-          Actions:
-            - Name: ECR
+            - Name: SnpeffECR
               InputArtifacts:
                 - Name: GitSource
               ActionTypeId:
@@ -446,7 +442,7 @@ Resources:
                     "RepositoryName": "${AppName}/snpeff/${Environment}"
                   }
               RunOrder: 1
-            - Name: BuildPushImage
+            - Name: SnpeffBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -459,9 +455,7 @@ Resources:
               OutputArtifacts:
                 - Name: SnpeffBuildOutput
               RunOrder: 2
-        - Name: StarBuild
-          Actions:
-            - Name: ECR
+            - Name: StarECR
               InputArtifacts:
                 - Name: GitSource
               ActionTypeId:
@@ -480,7 +474,7 @@ Resources:
                     "RepositoryName": "${AppName}/star/${Environment}"
                   }
               RunOrder: 1
-            - Name: BuildPushImage
+            - Name: StarBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -493,9 +487,7 @@ Resources:
               OutputArtifacts:
                 - Name: StarBuildOutput
               RunOrder: 2
-        - Name: TrimmomaticBuild
-          Actions:
-            - Name: ECR
+            - Name: TrimmomaticECR
               InputArtifacts:
                 - Name: GitSource
               ActionTypeId:
@@ -514,7 +506,7 @@ Resources:
                     "RepositoryName": "${AppName}/trimmomatic/${Environment}"
                   }
               RunOrder: 1
-            - Name: BuildPushImage
+            - Name: TrimmomaticBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
