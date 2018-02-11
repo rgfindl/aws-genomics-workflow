@@ -1,12 +1,9 @@
 version: 0.1
 phases:
-  pre_build:
-    commands:
-      - cd ${SRC_PATH}
-      - $(aws ecr get-login)
   build:
     commands:
       - cd ${SRC_PATH}
+      - $(aws ecr get-login)
       - docker build --tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" .
       - docker tag "$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)" "${REPOSITORY_URI}:$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
       - docker push "${REPOSITORY_URI}"
