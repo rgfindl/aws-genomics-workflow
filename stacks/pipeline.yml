@@ -61,11 +61,7 @@ Resources:
     DependsOn: CodePipelineRole
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName:
-        Fn::Join:
-          - ''
-          - - Ref: AWS::StackName
-            - '-pipeline-policy'
+      PolicyName: !Sub "${AWS::StackName}-pipeline-policy"
       Roles:
         - !Ref CodePipelineRole
       PolicyDocument:
@@ -97,11 +93,7 @@ Resources:
     DependsOn: CloudFormationRole
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName:
-        Fn::Join:
-          - ''
-          - - Ref: AWS::StackName
-            - '-cloudformation-policy'
+      PolicyName: !Sub "${AWS::StackName}-cloudformation-policy"
       Roles:
         - !Ref CloudFormationRole
       PolicyDocument:
@@ -133,11 +125,7 @@ Resources:
     Description: Policy for the codebuild execution
     DependsOn: CodeBuildRole
     Properties:
-      PolicyName:
-        Fn::Join:
-          - ''
-          - - Ref: AWS::StackName
-            - '-codebuild-policy'
+      PolicyName: !Sub "${AWS::StackName}-codebuild-policy"
       Roles:
         - !Ref CodeBuildRole
       PolicyDocument:
@@ -156,6 +144,7 @@ Resources:
   #
   VPCCodeBuild:
     Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildPolicy
     Properties:
       Artifacts:
         Type: CODEPIPELINE
@@ -165,25 +154,160 @@ Resources:
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: StackName
-            Value:
-              Fn::Join:
-                - ''
-                - - Ref: AppName
-                  - '-vpc-'
-                - - Ref: Environment
+            Value: !Sub "${AppName}-vpc-${Environment}"
           - Name: KeyPairName
             Value: !Ref KeyPairName
-      Name:
-        Fn::Join:
-          - ''
-          - - Ref: AppName
-            - '-vpc-'
-                - - Ref: Environment
+      Name: !Sub "${AppName}-vpc-${Environment}"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Source:
         Type: CODEPIPELINE
         BuildSpec: stacks/vpc/buildspec.yml
       TimeoutInMinutes: 5 # must be between 5 minutes and 8 hours
+
+  #
+  # FusionCatcher CodeBuild
+  #
+  FusionCatcherCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildPolicy
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:1.12.1
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/fusioncatcher/${Environment}"
+          - Name: APP
+            Value: !Sub "${AppName}-fusioncatcher-${Environment}"
+          - Name: SRC_PATH
+            Value: "./src/batch/fusioncatcher"
+      Name: !Sub "${AppName}-fusioncatcher-${Environment}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: src/batch/buildspec.yml
+      TimeoutInMinutes: 10 # must be between 5 minutes and 8 hours
+
+  #
+  # Rsem CodeBuild
+  #
+  RsemCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildPolicy
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:1.12.1
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/rsem/${Environment}"
+          - Name: APP
+            Value: !Sub "${AppName}-rsem-${Environment}"
+          - Name: SRC_PATH
+            Value: "./src/batch/rsem"
+      Name: !Sub "${AppName}-rsem-${Environment}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: src/batch/buildspec.yml
+      TimeoutInMinutes: 10 # must be between 5 minutes and 8 hours
+
+  #
+  # Snpeff CodeBuild
+  #
+  SnpeffCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildPolicy
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:1.12.1
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/snpeff/${Environment}"
+          - Name: APP
+            Value: !Sub "${AppName}-snpeff-${Environment}"
+          - Name: SRC_PATH
+            Value: "./src/batch/snpeff"
+      Name: !Sub "${AppName}-snpeff-${Environment}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: src/batch/buildspec.yml
+      TimeoutInMinutes: 10 # must be between 5 minutes and 8 hours
+
+  #
+  # Star CodeBuild
+  #
+  StarCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildPolicy
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:1.12.1
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/star/${Environment}"
+          - Name: APP
+            Value: !Sub "${AppName}-star-${Environment}"
+          - Name: SRC_PATH
+            Value: "./src/batch/star"
+      Name: !Sub "${AppName}-star-${Environment}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: src/batch/buildspec.yml
+      TimeoutInMinutes: 10 # must be between 5 minutes and 8 hours
+
+  #
+  # Trimmomatic CodeBuild
+  #
+  TrimmomaticCodeBuild:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildPolicy
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/docker:1.12.1
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/trimmomatic/${Environment}"
+          - Name: APP
+            Value: !Sub "${AppName}-trimmomatic-${Environment}"
+          - Name: SRC_PATH
+            Value: "./src/batch/trimmomatic"
+      Name: !Sub "${AppName}-trimmomatic-${Environment}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: src/batch/buildspec.yml
+      TimeoutInMinutes: 10 # must be between 5 minutes and 8 hours
 
   #
   # Pipelines that create/update the cloudformation stacks within the project
@@ -233,3 +357,183 @@ Resources:
               OutputArtifacts:
                 - Name: VPCSource
               RunOrder: 1
+        - Name: FusionCatcherBuild
+          Actions:
+            - Name: ECR
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: ECRSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/ecr.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-fusioncatcher-ecr-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "RepositoryName": "${AppName}/fusioncatcher/${Environment}"
+                  }
+              RunOrder: 1
+            - Name: BuildPushImage
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref FusionCatcherCodeBuild
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: FusionCatcherBuildOutput
+              RunOrder: 2
+        - Name: RsemBuild
+          Actions:
+            - Name: ECR
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: ECRSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/ecr.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-rsem-ecr-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "RepositoryName": "${AppName}/rsem/${Environment}"
+                  }
+              RunOrder: 1
+            - Name: BuildPushImage
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref RsemCodeBuild
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: RsemBuildOutput
+              RunOrder: 2
+        - Name: SnpeffBuild
+          Actions:
+            - Name: ECR
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: ECRSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/ecr.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-snpeff-ecr-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "RepositoryName": "${AppName}/snpeff/${Environment}"
+                  }
+              RunOrder: 1
+            - Name: BuildPushImage
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref SnpeffCodeBuild
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: SnpeffBuildOutput
+              RunOrder: 2
+        - Name: StarBuild
+          Actions:
+            - Name: ECR
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: ECRSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/ecr.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-star-ecr-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "RepositoryName": "${AppName}/star/${Environment}"
+                  }
+              RunOrder: 1
+            - Name: BuildPushImage
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref starCodeBuild
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: StarBuildOutput
+              RunOrder: 2
+        - Name: TrimmomaticBuild
+          Actions:
+            - Name: ECR
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: ECRSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/ecr.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-trimmomatic-ecr-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "RepositoryName": "${AppName}/trimmomatic/${Environment}"
+                  }
+              RunOrder: 1
+            - Name: BuildPushImage
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref TrimmomaticCodeBuild
+              InputArtifacts:
+                - Name: GitSource
+              OutputArtifacts:
+                - Name: TrimmomaticBuildOutput
+              RunOrder: 2
