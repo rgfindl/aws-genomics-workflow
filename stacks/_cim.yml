@@ -1,6 +1,6 @@
 version: 0.1
 stack:
-  name: streamline # Note: Update this with your stack name
+  name: streamline-pipeline-${opt.env} # Note: Update this with your stack name
   template:
     file: pipeline.yml
     # Stacks are uploaded here prior to deployment.  The bucket is created if it doesn't exist.
@@ -17,6 +17,7 @@ stack:
 
     KeyPairName: 'bluefineng'
     Environment: '${opt.env}'
+    AppName: 'streamline'
 
   #
   # Define stack capabilities required.
