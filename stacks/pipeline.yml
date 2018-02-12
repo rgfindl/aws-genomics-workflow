@@ -357,7 +357,31 @@ Resources:
               OutputArtifacts:
                 - Name: VPCSource
               RunOrder: 1
-        - Name: BuildBatchImages
+        - Name: Batch
+          Actions:
+            - Name: Batch
+              InputArtifacts:
+                - Name: GitSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/batch.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-batch-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "AppName": "${AppName}",
+                    "Environment": "${Environment}",
+                    "KeyPairName": "${KeyPairName}",
+                    "VPCStack": "${AppName}-vpc-${Environment}"
+                  }
+              RunOrder: 1
+        - Name: BatchJobs
           Actions:
             - Name: FusionCatcherECR
               InputArtifacts:
@@ -519,30 +543,128 @@ Resources:
               OutputArtifacts:
                 - Name: TrimmomaticBuildOutput
               RunOrder: 2
-        - Name: Batch
-          Actions:
-            - Name: BatchEnvironment
+            - Name: FusionCatcherJob
               InputArtifacts:
                 - Name: GitSource
-                - Name: VPCSource
-                - Name: FusionCatcherBuildOutput
-                - Name: RsemBuildOutput
-                - Name: SnpeffBuildOutput
-                - Name: StarBuildOutput
-                - Name: TrimmomaticBuildOutput
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
                 Version: 1
                 Provider: CloudFormation
               Configuration:
-                TemplatePath: "GitSource::stacks/batch/batch.stack.yml"
+                TemplatePath: "GitSource::stacks/batch/job.stack.yml"
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CloudFormationRole.Arn
-                StackName: !Sub "${AppName}-batch-${Environment}"
+                StackName: !Sub "${AppName}-fusioncatcher-job-${Environment}"
                 ParameterOverrides: !Sub |
                   {
-                    "RepositoryName": "${AppName}/trimmomatic/${Environment}"
+                    "AppName": "${AppName}",
+                    "Environment": "${Environment}",
+                    "JobName": "fusioncatcher",
+                    "VPCStack": "${AppName}-vpc-${Environment}",
+                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/fusioncatcher/${Environment}",
+                    "BuildVersion" : { "Fn::GetParam" : ["FusionCatcherBuildOutput", "version.json", "version"]}
                   }
-              RunOrder: 1
+              RunOrder: 3
+            - Name: RsemJob
+              InputArtifacts:
+                - Name: GitSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/job.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-rsem-job-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "AppName": "${AppName}",
+                    "Environment": "${Environment}",
+                    "JobName": "rsem",
+                    "VPCStack": "${AppName}-vpc-${Environment}",
+                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/rsem/${Environment}",
+                    "BuildVersion" : { "Fn::GetParam" : ["RsemBuildOutput", "version.json", "version"]}
+                  }
+              RunOrder: 3
+            - Name: SnpeffJob
+              InputArtifacts:
+                - Name: GitSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/job.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-snpeff-job-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "AppName": "${AppName}",
+                    "Environment": "${Environment}",
+                    "JobName": "snpeff",
+                    "VPCStack": "${AppName}-vpc-${Environment}",
+                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/snpeff/${Environment}",
+                    "BuildVersion" : { "Fn::GetParam" : ["SnpeffBuildOutput", "version.json", "version"]}
+                  }
+              RunOrder: 3
+            - Name: StarJob
+              InputArtifacts:
+                - Name: GitSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/job.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-star-job-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "AppName": "${AppName}",
+                    "Environment": "${Environment}",
+                    "JobName": "star",
+                    "VPCStack": "${AppName}-vpc-${Environment}",
+                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/star/${Environment}",
+                    "BuildVersion" : { "Fn::GetParam" : ["StarBuildOutput", "version.json", "version"]}
+                  }
+              RunOrder: 3
+            - Name: TrimmomaticJob
+              InputArtifacts:
+                - Name: GitSource
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                TemplatePath: "GitSource::stacks/batch/job.stack.yml"
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                StackName: !Sub "${AppName}-trimmomatic-job-${Environment}"
+                ParameterOverrides: !Sub |
+                  {
+                    "AppName": "${AppName}",
+                    "Environment": "${Environment}",
+                    "JobName": "trimmomatic",
+                    "VPCStack": "${AppName}-vpc-${Environment}",
+                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/trimmomatic/${Environment}",
+                    "BuildVersion" : { "Fn::GetParam" : ["TrimmomaticBuildOutput", "version.json", "version"]}
+                  }
+              RunOrder: 3

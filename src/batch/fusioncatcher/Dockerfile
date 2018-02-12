@@ -52,7 +52,7 @@ WORKDIR /opt
 ######################
 
 RUN wget --no-check-certificate http://sf.net/projects/fusioncatcher/files/bootstrap.py -O bootstrap.py \
-    && python bootstrap.py -t -download -y -i /opt/fusioncatcher/v1.00/
+    && python bootstrap.py -t --download -y -i /opt/fusioncatcher/v1.00/
 
 ADD run.sh ./run.sh
 RUN chmod a+x ./run.sh
