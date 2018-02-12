@@ -101,9 +101,9 @@ Resources:
         InstanceRole: !Ref InstanceRole
         InstanceTypes:
           - optimal
-        MinvCpus: 4
-        DesiredvCpus: 4
-        MaxvCpus: 4
+        MinvCpus: 0
+        DesiredvCpus: 0
+        MaxvCpus: 100
         SecurityGroupIds:
           - !Ref EC2SecurityGroup
         Subnets:
