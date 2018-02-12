@@ -563,7 +563,7 @@ Resources:
                     "Environment": "${Environment}",
                     "JobName": "fusioncatcher",
                     "VPCStack": "${AppName}-vpc-${Environment}",
-                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "BatchStack": "${AppName}-batch-${Environment}",
                     "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/fusioncatcher/${Environment}",
                     "BuildVersion" : { "Fn::GetParam" : ["FusionCatcherBuildOutput", "version.json", "version"]}
                   }
@@ -588,7 +588,7 @@ Resources:
                     "Environment": "${Environment}",
                     "JobName": "rsem",
                     "VPCStack": "${AppName}-vpc-${Environment}",
-                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "BatchStack": "${AppName}-batch-${Environment}",
                     "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/rsem/${Environment}",
                     "BuildVersion" : { "Fn::GetParam" : ["RsemBuildOutput", "version.json", "version"]}
                   }
@@ -613,7 +613,7 @@ Resources:
                     "Environment": "${Environment}",
                     "JobName": "snpeff",
                     "VPCStack": "${AppName}-vpc-${Environment}",
-                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "BatchStack": "${AppName}-batch-${Environment}",
                     "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/snpeff/${Environment}",
                     "BuildVersion" : { "Fn::GetParam" : ["SnpeffBuildOutput", "version.json", "version"]}
                   }
@@ -638,7 +638,7 @@ Resources:
                     "Environment": "${Environment}",
                     "JobName": "star",
                     "VPCStack": "${AppName}-vpc-${Environment}",
-                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "BatchStack": "${AppName}-batch-${Environment}",
                     "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/star/${Environment}",
                     "BuildVersion" : { "Fn::GetParam" : ["StarBuildOutput", "version.json", "version"]}
                   }
@@ -663,7 +663,7 @@ Resources:
                     "Environment": "${Environment}",
                     "JobName": "trimmomatic",
                     "VPCStack": "${AppName}-vpc-${Environment}",
-                    "BatchStack": "${AppName}-batch-${Environment}"
+                    "BatchStack": "${AppName}-batch-${Environment}",
                     "RepositoryUrl": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}/trimmomatic/${Environment}",
                     "BuildVersion" : { "Fn::GetParam" : ["TrimmomaticBuildOutput", "version.json", "version"]}
                   }
