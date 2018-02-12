@@ -174,7 +174,7 @@ Resources:
       Artifacts:
         Type: CODEPIPELINE
       Environment:
-        ComputeType: BUILD_GENERAL1_LARGE
+        ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/docker:1.12.1
         Type: LINUX_CONTAINER
         EnvironmentVariables:
@@ -191,7 +191,7 @@ Resources:
       Source:
         Type: CODEPIPELINE
         BuildSpec: src/batch/buildspec.yml
-      TimeoutInMinutes: 120 # must be between 5 minutes and 8 hours
+      TimeoutInMinutes: 10 # must be between 5 minutes and 8 hours
 
   #
   # Rsem CodeBuild
