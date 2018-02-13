@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Service1 ECR repository
+Description: Batch ECR repository
 Parameters:
 
   RepositoryName:

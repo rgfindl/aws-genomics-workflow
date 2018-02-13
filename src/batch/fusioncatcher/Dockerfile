@@ -54,6 +54,9 @@ WORKDIR /opt
 RUN wget --no-check-certificate http://sf.net/projects/fusioncatcher/files/bootstrap.py -O bootstrap.py \
     && python bootstrap.py -t -y -i /opt/fusioncatcher/v1.00/
 
+# The Fusioncatcher database was already added to the AMI.
+RUN ln -s /docker_scratch/fusioncatcher/v1.00/data/human_v90 /opt/fusioncatcher/v1.00/data/current
+
 ADD run.sh ./run.sh
 RUN chmod a+x ./run.sh
 
