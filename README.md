@@ -1,1 +1,1 @@
-# streamline-batch-genomics
+# aws-genomics-workflow
